@@ -8,18 +8,18 @@ from geojson import Feature, FeatureCollection, Polygon
 def main():
     os.makedirs("docs", exist_ok=True)
 
-    # --- Centre géographique de Paris ---
+    # Centre géographique de Paris 
     center_lat, center_lng = 48.866667, 2.333333
 
-    # --- Taille de l’hexagone (≈ 1 km de diamètre) ---
+    #  Taille de l’hexagone (≈ 1 km de diamètre)
     RES = 8  # chaque côté ≈ 0.46 km, donc largeur totale ≈ 1 km
 
-    # --- Calcul H3 (v4) ---
+    # Calcul H3 
     h = h3.latlng_to_cell(center_lat, center_lng, RES)
     lat, lng = h3.cell_to_latlng(h)
     boundary = h3.cell_to_boundary(h)  # [[lat, lng], ...]
 
-    # --- Objet "zone" ---
+    # zone
     zone = {
         "uuid": str(uuid.uuid4()),
         "id": "PAR-CENTER",
@@ -32,11 +32,11 @@ def main():
         "status": "active"
     }
 
-    # --- Sauvegarde JSON (data) ---
+    # Sauvegarde JSON  
     with open("docs/paris_center_hex.json", "w", encoding="utf-8") as f:
         json.dump(zone, f, ensure_ascii=False, indent=2)
 
-    # --- Sauvegarde GeoJSON (affichage) ---
+    # Sauvegarde GeoJSON  
     ring = [[(lng_, lat_) for (lat_, lng_) in boundary] + [(boundary[0][1], boundary[0][0])]]
     poly = Feature(geometry=Polygon(ring), properties=zone)
     fc = FeatureCollection([poly])
