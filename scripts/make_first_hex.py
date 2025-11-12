@@ -1,27 +1,28 @@
 # scripts/make_first_hex.py
-# Génère un premier hexagone H3 (~1.2 km de côté, res=7) centré à Paris
-# et exporte : docs/par_hex_PAR-0001.json + docs/par_hex_PAR-0001.geojson
+# Crée un hexagone centré exactement sur Paris (48.8566, 2.3522)
+# de taille ≈ 1 km de diamètre (résolution H3 = 8)
 
-import os
-import uuid
-import json
-import h3  # v4 API
+import os, uuid, json, h3
 from geojson import Feature, FeatureCollection, Polygon
 
 def main():
-    # --- Paramètres ---
-    RES = 7  # ~1.2 km côté moyen
-    center_lat, center_lng = 48.856614, 2.3522219  # Paris centre (Hôtel de Ville)
+    os.makedirs("docs", exist_ok=True)
+
+    # --- Centre géographique de Paris ---
+    center_lat, center_lng = 48.8566, 2.3522
+
+    # --- Taille de l’hexagone (≈ 1 km de diamètre) ---
+    RES = 8  # chaque côté ≈ 0.46 km, donc largeur totale ≈ 1 km
 
     # --- Calcul H3 (v4) ---
-    h = h3.latlng_to_cell(center_lat, center_lng, RES)  # index H3 de la cellule contenant le point
-    lat, lng = h3.cell_to_latlng(h)                    # centroïde "canonique" de la cellule
-    boundary = h3.cell_to_boundary(h)                  # liste de points [[lat, lng], ...]
+    h = h3.latlng_to_cell(center_lat, center_lng, RES)
+    lat, lng = h3.cell_to_latlng(h)
+    boundary = h3.cell_to_boundary(h)  # [[lat, lng], ...]
 
-    # --- Objet "zone" JSON ---
+    # --- Objet "zone" ---
     zone = {
         "uuid": str(uuid.uuid4()),
-        "id": "PAR-0001",
+        "id": "PAR-CENTER",
         "h3_index": h,
         "city_code": "PAR",
         "latitude": lat,
@@ -31,24 +32,23 @@ def main():
         "status": "active"
     }
 
-    # --- Dossier de sortie ---
-    os.makedirs("docs", exist_ok=True)
-
-    # --- Sauvegarde JSON (données) ---
-    with open("docs/par_hex_PAR-0001.json", "w", encoding="utf-8") as f:
+    # --- Sauvegarde JSON (data) ---
+    with open("docs/paris_center_hex.json", "w", encoding="utf-8") as f:
         json.dump(zone, f, ensure_ascii=False, indent=2)
 
-    # --- Sauvegarde GeoJSON (affichage Leaflet) ---
-    # GeoJSON attend des coordonnées (lng, lat) ET un anneau fermé (retour au premier point).
+    # --- Sauvegarde GeoJSON (affichage) ---
     ring = [[(lng_, lat_) for (lat_, lng_) in boundary] + [(boundary[0][1], boundary[0][0])]]
     poly = Feature(geometry=Polygon(ring), properties=zone)
     fc = FeatureCollection([poly])
 
-    with open("docs/par_hex_PAR-0001.geojson", "w", encoding="utf-8") as f:
+    with open("docs/paris_center_hex.geojson", "w", encoding="utf-8") as f:
         json.dump(fc, f, ensure_ascii=False, indent=2)
 
-    print("✅ OK:", zone["id"], zone["h3_index"])
-    print("→ Fichiers créés dans docs/: par_hex_PAR-0001.json et par_hex_PAR-0001.geojson")
+    print("✅ OK - Hexagone centré sur Paris généré !")
+    print("H3 Index :", h)
+    print("Fichiers : docs/paris_center_hex.json & docs/paris_center_hex.geojson")
 
 if __name__ == "__main__":
     main()
+
+    
