@@ -12,7 +12,7 @@ def main():
     center_lat, center_lng = 48.866667, 2.333333
 
     #  Taille de l’hexagone (≈ 1 km de diamètre)
-    RES = 8  # chaque côté ≈ 0.46 km, donc largeur totale ≈ 1 km
+    RES = 7  
 
     # Calcul H3 
     h = h3.latlng_to_cell(center_lat, center_lng, RES)
