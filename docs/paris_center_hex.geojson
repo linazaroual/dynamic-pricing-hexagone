@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.352657,
+              48.858845
+            ],
+            [
+              2.346342,
+              48.857699
+            ],
+            [
+              2.345015,
+              48.853194
+            ],
+            [
+              2.350003,
+              48.849835
+            ],
+            [
+              2.356317,
+              48.850981
+            ],
+            [
+              2.357644,
+              48.855486
+            ],
+            [
+              2.352657,
+              48.858845
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "adc460bf-aaf4-4553-9cb9-955335f1ff2a",
+        "id": "PAR-CENTER",
+        "h3_index": "881fb46625fffff",
+        "city_code": "PAR",
+        "latitude": 48.85434004428178,
+        "longitude": 2.351329855565915,
+        "available": true,
+        "manual_surge": 0,
+        "status": "active"
+      }
+    }
+  ]
+}
