@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.356638,
+              48.872359
+            ],
+            [
+              2.342679,
+              48.865563
+            ],
+            [
+              2.345015,
+              48.853194
+            ],
+            [
+              2.361304,
+              48.847622
+            ],
+            [
+              2.375258,
+              48.854416
+            ],
+            [
+              2.372929,
+              48.866784
+            ],
+            [
+              2.356638,
+              48.872359
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "7f2279bf-b5d2-42f5-9880-2d44d338af4b",
+        "id": "PAR-0001",
+        "h3_index": "871fb4662ffffff",
+        "city_code": "PAR",
+        "latitude": 48.85999060453497,
+        "longitude": 2.358971483299541,
+        "available": true,
+        "manual_surge": 0,
+        "status": "active"
+      }
+    }
+  ]
+}
