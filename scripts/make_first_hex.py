@@ -9,7 +9,7 @@ def main():
     os.makedirs("docs", exist_ok=True)
 
     # --- Centre géographique de Paris ---
-    center_lat, center_lng = 48.8566, 2.3522
+    center_lat, center_lng = 48.866667, 2.333333
 
     # --- Taille de l’hexagone (≈ 1 km de diamètre) ---
     RES = 8  # chaque côté ≈ 0.46 km, donc largeur totale ≈ 1 km
@@ -51,4 +51,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-    
