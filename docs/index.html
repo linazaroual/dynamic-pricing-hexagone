@@ -4,15 +4,22 @@
   <meta charset="utf-8"/>
   <title>Dynamic Pricing – Île-de-France</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
   <style>
     html,body,#map{height:100%;margin:0}
     .legend{
       position:absolute;bottom:12px;left:12px;background:#fff;
-      padding:8px 10px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);
+      padding:8px 10px;border-radius:10px;
+      box-shadow:0 2px 12px rgba(0,0,0,.1);
       font:14px system-ui;
     }
-    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid #222;vertical-align:middle}
+    .dot{
+      display:inline-block;width:10px;height:10px;border-radius:50%;
+      margin-right:6px;border:1px solid #222;vertical-align:middle;
+    }
   </style>
 </head>
 <body>
@@ -27,14 +34,15 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const map = L.map('map').setView([48.8566, 2.3522], 9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
 
 function surgeColor(v){
   if (v >= 2.5) return '#ff9b8c';
   if (v >= 1.5) return '#ffe499';
   return '#bfead7'; // vert d'eau
 }
-
 function styleFromProps(p){
   return {
     weight: 1,
@@ -44,6 +52,7 @@ function styleFromProps(p){
   };
 }
 
+// 🔴 IMPORTANT : on charge bien la grille IDF
 fetch('./idf_hex_grid_res7.geojson')
   .then(r => r.json())
   .then(gj => {
@@ -51,12 +60,17 @@ fetch('./idf_hex_grid_res7.geojson')
       style: f => styleFromProps(f.properties),
       onEachFeature: (f, poly) => {
         const p = f.properties;
-        poly.bindPopup(`<b>${p.id}</b><br>surge: ${p.manual_surge || 0}x<br>available: ${p.available}`);
+        poly.bindPopup(
+          `<b>${p.id}</b><br>` +
+          `surge: ${p.manual_surge || 0}x<br>` +
+          `available: ${p.available}`
+        );
       }
     }).addTo(map);
 
     try { map.fitBounds(layer.getBounds()); } catch(e){}
-  });
+  })
+  .catch(err => console.error('Erreur chargement GeoJSON :', err));
 </script>
 </body>
 </html>
