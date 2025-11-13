@@ -11,7 +11,7 @@ import h3  # H3 v4
 
 
 # --- Paramètres généraux ---
-RES = 7  # ≈ 1.2 km par côté
+RES = 8  # ≈ 1.2 km par côté
 SEED = (48.8566, 2.3522)  # centre Paris
 
 # BBOX pour limiter les calculs (grosse boîte autour de l'IDF)
