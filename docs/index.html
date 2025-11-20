@@ -33,44 +33,62 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map = L.map('map').setView([48.8566, 2.3522], 9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18
-}).addTo(map);
+  // --- Carte de base ---
+  const map = L.map('map').setView([48.8566, 2.3522], 9);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+  }).addTo(map);
 
-function surgeColor(v){
-  if (v >= 2.5) return '#ff9b8c';
-  if (v >= 1.5) return '#ffe499';
-  return '#bfead7'; // vert d'eau
-}
-function styleFromProps(p){
-  return {
-    weight: 1,
-    color: '#2a2a2a',
-    fillOpacity: 0.7,
-    fillColor: surgeColor(p.manual_surge || 0)
-  };
-}
+  // --- Style des hexagones selon le surge ---
+  function surgeColor(v){
+    if (v >= 2.5) return '#ff9b8c';
+    if (v >= 1.5) return '#ffe499';
+    return '#bfead7'; // vert d'eau
+  }
+  function styleFromProps(p){
+    return {
+      weight: 1,
+      color: '#2a2a2a',
+      fillOpacity: 0.7,
+      fillColor: surgeColor(p.manual_surge || 0)
+    };
+  }
 
-// 🔴 IMPORTANT : on charge bien la grille IDF
-fetch("idf_hex_grid_res8.geojson")
-  .then(r => r.json())
-  .then(gj => {
-    const layer = L.geoJSON(gj, {
-      style: f => styleFromProps(f.properties),
-      onEachFeature: (f, poly) => {
-        const p = f.properties;
-        poly.bindPopup(
-          `<b>${p.id}</b><br>` +
-          `surge: ${p.manual_surge || 0}x<br>` +
-          `available: ${p.available}`
-        );
-      }
-    }).addTo(map);
+  // 🔹 1) Charger la grille H3 IDF (résolution 8)
+  fetch("idf_hex_grid_res8.geojson")
+    .then(r => r.json())
+    .then(gj => {
+      const hexLayer = L.geoJSON(gj, {
+        style: f => styleFromProps(f.properties),
+        onEachFeature: (f, poly) => {
+          const p = f.properties;
+          poly.bindPopup(
+            `<b>${p.id}</b><br>` +
+            `surge: ${p.manual_surge || 0}x<br>` +
+            `available: ${p.available}`
+          );
+        }
+      }).addTo(map);
 
-    try { map.fitBounds(layer.getBounds()); } catch(e){}
-  })
-  .catch(err => console.error('Erreur chargement GeoJSON :', err));
+      // Zoom sur la grille
+      try { map.fitBounds(hexLayer.getBounds()); } catch(e){}
+    })
+    .catch(err => console.error('Erreur chargement grille IDF :', err));
+
+  // 🔴 2) Ajouter le contour officiel de l’Île-de-France
+  // (fichier téléchargé et enregistré dans docs/ile_de_france.geojson)
+  fetch("ile_de_france.geojson")
+    .then(r => r.json())
+    .then(gj => {
+      L.geoJSON(gj, {
+        style: {
+          color: "#ff0000",
+          weight: 2,
+          fillOpacity: 0      // pas de remplissage, juste le contour rouge
+        }
+      }).addTo(map);
+    })
+    .catch(err => console.error('Erreur chargement contour IDF :', err));
 </script>
 </body>
 </html>
