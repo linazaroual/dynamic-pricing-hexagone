@@ -1,59 +1,50 @@
 import json
-import uuid
-import h3
 from shapely.geometry import Point, shape
+import h3
+from tqdm import tqdm
 
 INPUT = "docs/idf_hex_grid_res8.geojson"
-OUTPUT = "docs/idf_hex_grid_ready.json"
 DEPT_FILE = "docs/departements_idf.geojson"
+OUTPUT = "docs/idf_hex_grid_ready.json"
 
-def load_departments():
-    with open(DEPT_FILE, "r", encoding="utf-8") as f:
-        gj = json.load(f)
-    return [(shape(feat["geometry"]), feat["properties"]["code_insee"]) for feat in gj["features"]]
-
-def find_department(lat, lng, departments):
-    pt = Point(lng, lat)
-    for geom, code in departments:
-        if geom.contains(pt):
-            return code
+def find_dept(lat, lng, departments):
+    point = Point(lng, lat)
+    for d in departments:
+        geom = shape(d["geometry"])
+        if geom.contains(point):
+            return d["properties"].get("code")
     return "00"  
 
 def main():
     with open(INPUT, "r", encoding="utf-8") as f:
         data = json.load(f)
-
     features = data["features"]
 
-    departments = load_departments()
+    with open(DEPT_FILE, "r", encoding="utf-8") as f:
+        dept_data = json.load(f)
 
-    counters = {}
+    departments = dept_data["features"]
 
-    for feature in features:
-        h3_index = feature.get("id") or feature["properties"].get("h3_index")
-
+    for feature in tqdm(features, desc="Enrichissement IDF"):
+        h3_index = feature["properties"]["h3_index"]
         lat, lng = h3.cell_to_latlng(h3_index)
-        dept = find_department(lat, lng, departments)
 
-        counters.setdefault(dept, 0)
-        counters[dept] += 1
-        zone_id = f"{dept}-{counters[dept]:05d}"
+        dept_code = find_dept(lat, lng, departments)
 
         feature["properties"].update({
-            "uuid": str(uuid.uuid4()),
-            "id": zone_id,
-            "h3_index": h3_index,
             "latitude": lat,
             "longitude": lng,
-            "city_code": dept,
+            "city_code": dept_code,
             "manual_surge": 0,
             "available": True,
             "status": "active"
         })
 
     with open(OUTPUT, "w", encoding="utf-8") as f:
-        json.dump({"type": "FeatureCollection", "features": features}, f, ensure_ascii=False, indent=2)
-
+        json.dump({
+            "type": "FeatureCollection",
+            "features": features
+        }, f, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":
