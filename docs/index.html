@@ -33,17 +33,17 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // --- Carte de base ---
+  // Carte 
   const map = L.map('map').setView([48.8566, 2.3522], 9);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
   }).addTo(map);
 
-  // --- Style des hexagones selon le surge ---
+  //  Style selon le surge 
   function surgeColor(v){
     if (v >= 2.5) return '#ff9b8c';
     if (v >= 1.5) return '#ffe499';
-    return '#bfead7'; // vert d'eau
+    return '#bfead7';
   }
   function styleFromProps(p){
     return {
@@ -54,29 +54,31 @@
     };
   }
 
-  // 🔹 1) Charger la grille H3 IDF (résolution 8)
-  fetch("idf_hex_grid_res8.geojson")
+  //  Charger le fichier JSON IDF
+  fetch("idf_hex_grid_ready.json")
     .then(r => r.json())
     .then(gj => {
       const hexLayer = L.geoJSON(gj, {
         style: f => styleFromProps(f.properties),
-        onEachFeature: (f, poly) => {
+        onEachFeature: (f, layer) => {
           const p = f.properties;
-          poly.bindPopup(
-            `<b>${p.id}</b><br>` +
-            `surge: ${p.manual_surge || 0}x<br>` +
-            `available: ${p.available}`
-          );
+          layer.bindPopup(`
+            <b>${p.id || "N/A"}</b><br>
+            UUID : ${p.uuid || "?"}<br>
+            Code : ${p.city_code || "?"}<br>
+            Surge : ${p.manual_surge || 0}x<br>
+            Disponible : ${p.available}<br>
+            Status : ${p.status}
+          `);
         }
       }).addTo(map);
 
-      // Zoom sur la grille
       try { map.fitBounds(hexLayer.getBounds()); } catch(e){}
     })
-    .catch(err => console.error('Erreur chargement grille IDF :', err));
+    .catch(err => console.error('Erreur JSON grille enrichie :', err));
 
-  // 🔴 2) Ajouter le contour officiel de l’Île-de-France
-  // (fichier téléchargé et enregistré dans docs/ile_de_france.geojson)
+
+  // Contour officiel IDF
   fetch("ile_de_france.geojson")
     .then(r => r.json())
     .then(gj => {
@@ -84,11 +86,11 @@
         style: {
           color: "#ff0000",
           weight: 2,
-          fillOpacity: 0      // pas de remplissage, juste le contour rouge
+          fillOpacity: 0
         }
       }).addTo(map);
     })
-    .catch(err => console.error('Erreur chargement contour IDF :', err));
+    .catch(err => console.error('Contour IDF erreur:', err));
 </script>
 </body>
 </html>

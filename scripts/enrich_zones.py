@@ -1,34 +1,42 @@
-
 import json
 import uuid
+import h3
 
-INPUT = "docs/idf_hex_grid_res8.json"
-OUTPUT = "docs/idf_hex_grid_par_ready.json"
-CITY_CODE = "PAR"
-
-
-def generate_id(i):
-    return f"{CITY_CODE}-{i:04d}"
-
+INPUT = "docs/idf_hex_grid_res8.geojson"
+OUTPUT = "docs/idf_hex_grid_ready.json"
 
 def main():
     with open(INPUT, "r", encoding="utf-8") as f:
-        zones = json.load(f)
+        data = json.load(f)
+
+    zones = data["features"]
 
 
-    for i, z in enumerate(zones, start=1):
-        z["id"] = generate_id(i)
-        z["city_code"] = CITY_CODE
-   
-        z.setdefault("manual_surge", 0)
-        z.setdefault("available", True)
-        z.setdefault("status", "active")
+    for i, feature in enumerate(zones):
+        props = feature.get("properties", {})
+        h3_index = props.get("h3_index") or props.get("id")
 
+        if not h3_index:
+            continue
+
+        lat, lng = h3.cell_to_latlng(h3_index)
+
+        feature["properties"].update({
+            "uuid": str(uuid.uuid4()),
+            "id": f"IDF-{str(i+1).zfill(5)}",
+            "latitude": lat,
+            "longitude": lng,
+            "city_code": "IDF",
+            "manual_surge": 0,
+            "available": True,
+            "status": "active"
+        })
 
     with open(OUTPUT, "w", encoding="utf-8") as f:
-        json.dump(zones, f, indent=2)
-
-
+        json.dump({
+            "type": "FeatureCollection",
+            "features": zones
+        }, f, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":
