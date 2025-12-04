@@ -1,4 +1,3 @@
-# scripts/make_first_hex.py
 # Crée un hexagone centré exactement sur Paris (48.8566, 2.3522)
 # de taille ≈ 1 km de diamètre (résolution H3 = 8)
 
@@ -44,9 +43,7 @@ def main():
     with open("docs/paris_center_hex.geojson", "w", encoding="utf-8") as f:
         json.dump(fc, f, ensure_ascii=False, indent=2)
 
-    print("✅ OK - Hexagone centré sur Paris généré !")
-    print("H3 Index :", h)
-    print("Fichiers : docs/paris_center_hex.json & docs/paris_center_hex.geojson")
+
 
 if __name__ == "__main__":
     main()
