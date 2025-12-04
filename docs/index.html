@@ -35,51 +35,53 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 
-  //Carte principale centrée sur Paris
   const map = L.map('map').setView([48.8566, 2.3522], 9);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
   }).addTo(map);
 
-  // Style selon le surge
   function surgeColor(v){
     if (v >= 2.5) return '#ff9b8c';
     if (v >= 1.5) return '#ffe499';
     return '#bfead7';
   }
+
   function styleFromProps(p){
     return {
-      weight: 0.5,
+      weight: 0.4,
       color: '#000000',
-      fillOpacity: 0.6,
-      fillColor: surgeColor(p.manual_surge || 0)
+      fillOpacity: 0.65,
+      fillColor: surgeColor(Number(p.manual_surge))
     };
   }
 
-  // Charger la grille enrichie IDF
+  
   fetch("idf_hex_grid_ready.json")
     .then(r => r.json())
     .then(gj => {
-      const hexLayer = L.geoJSON(gj, {
+      const layer = L.geoJSON(gj, {
         style: f => styleFromProps(f.properties),
-        onEachFeature: (f, layer) => {
+        onEachFeature: (f, poly) => {
           const p = f.properties;
-          layer.bindPopup(
-            `<b>${p.id || "N/A"}</b><br>` +
-            `INSEE: ${p.city_code || "?"}<br>` +
-            `UUID: ${p.uuid || "<i>None</i>"}<br>` +
-            `Available: ${p.available}<br>` +
-            `Manual Surge: ${p.manual_surge || 0}x<br>` +
-            `Status: ${p.status || "?"}`
-          );
+          poly.bindPopup(`
+            <b>${p.id}</b><br>
+            Département : <b>${p.city_code}</b><br>
+            H3 Index : <code>${p.h3_index}</code><br>
+            Latitude : ${p.latitude.toFixed(5)}<br>
+            Longitude : ${p.longitude.toFixed(5)}<br>
+            UUID : ${p.uuid}<br>
+            Disponible : ${p.available}<br>
+            Surge : ${p.manual_surge}x<br>
+            Statut : ${p.status}
+          `);
         }
       }).addTo(map);
 
-      map.fitBounds(hexLayer.getBounds());
+      try { map.fitBounds(layer.getBounds()); } catch {}
     })
     .catch(err => console.error("JSON GRID ERROR:", err));
 
-  //  Contour officiel IDF 
+ 
   fetch("ile_de_france.geojson")
     .then(r => r.json())
     .then(gj => {
