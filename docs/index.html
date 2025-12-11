@@ -56,7 +56,7 @@
   }
 
   
-  fetch("idf_hex_grid_ready.json")
+  fetch("idf_hex_grid_final.json")
     .then(r => r.json())
     .then(gj => {
       const layer = L.geoJSON(gj, {
