@@ -32,22 +32,17 @@
   <div><span class="dot" style="background:#ff9b8c"></span> High (≥2.5x)</div>
 </div>
 
-<!-- Librairies -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/h3-js@4.3.0/dist/h3-js.umd.js"></script>
 
 <script>
-  // =========================
-  //  Carte
-  // =========================
+
   const map = L.map('map').setView([48.8566, 2.3522], 9);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
   }).addTo(map);
 
-  // =========================
-  //  Couleurs selon le surge
-  // =========================
+
   function surgeColor(v){
     if (v >= 2.5) return '#ff9b8c';
     if (v >= 1.5) return '#ffe499';
@@ -63,9 +58,7 @@
     };
   }
 
-  // =========================
-  //  Cluster centre + 6 voisins
-  // =========================
+
   let hexLayer = null;
   let currentHighlight = [];
 
@@ -86,7 +79,6 @@
     if (!hexLayer) return;
     resetHighlight();
 
-    // centre + 6 voisins (k = 1)
     const cluster = h3.gridDisk(centerHex, 1);
 
     hexLayer.eachLayer(layer => {
@@ -104,9 +96,7 @@
     console.log("Cluster H3 sélectionné :", centerHex, " → ", cluster);
   }
 
-  // =========================
-  //  Charger les hexagones IDF
-  // =========================
+
   fetch("idf_hex_grid_final.json")
     .then(r => r.json())
     .then(gj => {
@@ -128,7 +118,6 @@
             Statut : ${p.status}
           `);
 
-          // 👉 au clic : cluster (centre + 6 voisins)
           poly.on("click", () => {
             highlightCluster(p.h3_index);
           });
@@ -141,7 +130,6 @@
     })
     .catch(err => console.error("JSON GRID ERROR:", err));
 
-  // 🔴 Plus de contour rouge IDF : on a supprimé tout le fetch(ile_de_france.geojson)
 
 </script>
 </body>
