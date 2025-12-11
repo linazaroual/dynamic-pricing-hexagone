@@ -23,6 +23,7 @@
     .leaflet-popup-content {font:14px system-ui;}
   </style>
 </head>
+
 <body>
 <div id="map"></div>
 
@@ -60,41 +61,37 @@
 
 
   let hexLayer = null;
-  let currentHighlight = [];
+
+
+  const highlightLayer = L.layerGroup().addTo(map);
 
   function resetHighlight(){
-    currentHighlight.forEach(l => {
-      const p = l.feature.properties;
-      l.setStyle({
-        weight: 0.4,
-        color: '#000000',
-        fillOpacity: 0.65,
-        fillColor: surgeColor(Number(p.manual_surge))
-      });
-    });
-    currentHighlight = [];
+    highlightLayer.clearLayers();
   }
 
   function highlightCluster(centerHex){
-    if (!hexLayer) return;
     resetHighlight();
 
     const cluster = h3.gridDisk(centerHex, 1);
 
+    const highlightStyle = {
+      color: "#003d99",
+      weight: 2,
+      fillColor: "#4287f5",
+      fillOpacity: 0.45
+    };
+
     hexLayer.eachLayer(layer => {
       const h = layer.feature.properties.h3_index;
       if (cluster.includes(h)) {
-        layer.setStyle({
-          fillColor: "#4287f5",
-          weight: 2,
-          color: "#003d99"
-        });
-        currentHighlight.push(layer);
+        const coords = layer.feature.geometry.coordinates[0];
+        L.polygon(coords, highlightStyle).addTo(highlightLayer);
       }
     });
 
-    console.log("Cluster H3 sélectionné :", centerHex, " → ", cluster);
+    console.log("Cluster sélectionné :", centerHex);
   }
+
 
 
   fetch("idf_hex_grid_final.json")
@@ -103,9 +100,11 @@
 
       hexLayer = L.geoJSON(gj, {
         style: f => styleFromProps(f.properties),
+
         onEachFeature: (f, poly) => {
           const p = f.properties;
 
+          
           poly.bindPopup(`
             <b>${p.id}</b><br>
             Département : <b>${p.city_code}</b><br>
@@ -118,19 +117,16 @@
             Statut : ${p.status}
           `);
 
-          poly.on("click", () => {
-            highlightCluster(p.h3_index);
-          });
+          
+          poly.on("click", () => highlightCluster(p.h3_index));
         }
       }).addTo(map);
 
-      try { map.fitBounds(hexLayer.getBounds()); } catch (e) {
-        console.warn("Impossible de fitBounds :", e);
-      }
+      try { map.fitBounds(hexLayer.getBounds()); } 
+      catch(e) { console.warn("fitBounds error :", e); }
     })
     .catch(err => console.error("JSON GRID ERROR:", err));
 
-
 </script>
 </body>
-</html>git add docs/index.html
+</html>
