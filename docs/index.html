@@ -32,14 +32,23 @@
   <div><span class="dot" style="background:#ff9b8c"></span> High (≥2.5x)</div>
 </div>
 
+<!-- 🔵 Librairie H3-js -->
+<script src="https://unpkg.com/h3-js@3.7.2/dist/h3-js.umd.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 
+  // -----------------------------
+  // 🎯 CARTE
+  // -----------------------------
   const map = L.map('map').setView([48.8566, 2.3522], 9);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
   }).addTo(map);
 
+  // -----------------------------
+  // 🎨 COULEURS SURGE
+  // -----------------------------
   function surgeColor(v){
     if (v >= 2.5) return '#ff9b8c';
     if (v >= 1.5) return '#ffe499';
@@ -55,14 +64,58 @@
     };
   }
 
-  
+  // -----------------------------
+  // 🔵 CLUSTERING H3 (centre + voisins)
+  // -----------------------------
+  let hexLayer = null;
+  let currentHighlight = [];
+
+  function resetHighlight(){
+    currentHighlight.forEach(l => {
+      const p = l.feature.properties;
+      l.setStyle({
+        weight: 0.4,
+        color: '#000000',
+        fillOpacity: 0.65,
+        fillColor: surgeColor(Number(p.manual_surge))
+      });
+    });
+    currentHighlight = [];
+  }
+
+  function highlightCluster(centerHex){
+    resetHighlight();
+
+    // h3-js — cluster = centre + 6 voisins
+    const cluster = h3.gridDisk(centerHex, 1);
+
+    hexLayer.eachLayer(layer => {
+      const h = layer.feature.properties.h3_index;
+      if (cluster.includes(h)) {
+        layer.setStyle({
+          fillColor: "#4287f5",
+          weight: 2,
+          color: "#003d99"
+        });
+        currentHighlight.push(layer);
+      }
+    });
+  }
+
+  // -----------------------------
+  // 🟩 CHARGER HEXAGONES IDF
+  // -----------------------------
   fetch("idf_hex_grid_final.json")
     .then(r => r.json())
     .then(gj => {
-      const layer = L.geoJSON(gj, {
+
+      hexLayer = L.geoJSON(gj, {
         style: f => styleFromProps(f.properties),
+
         onEachFeature: (f, poly) => {
           const p = f.properties;
+
+          // Popup info
           poly.bindPopup(`
             <b>${p.id}</b><br>
             Département : <b>${p.city_code}</b><br>
@@ -74,26 +127,19 @@
             Surge : ${p.manual_surge}x<br>
             Statut : ${p.status}
           `);
+
+          // 👉 Highlight cluster au clic
+          poly.on("click", () => {
+            highlightCluster(p.h3_index);
+          });
         }
       }).addTo(map);
 
-      try { map.fitBounds(layer.getBounds()); } catch {}
+      map.fitBounds(hexLayer.getBounds());
     })
     .catch(err => console.error("JSON GRID ERROR:", err));
 
- 
-  fetch("ile_de_france.geojson")
-    .then(r => r.json())
-    .then(gj => {
-      L.geoJSON(gj, {
-        style: {
-          color: "#ff0000",
-          weight: 2,
-          fillOpacity: 0
-        }
-      }).addTo(map);
-    })
-    .catch(err => console.error("Contour ERROR:", err));
+
 
 </script>
 </body>
