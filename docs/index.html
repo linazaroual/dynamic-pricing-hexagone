@@ -5,22 +5,39 @@
   <title>Dynamic Pricing – Île-de-France</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
-    html,body,#map {height:100%;margin:0}
-    .legend{
-      position:absolute;bottom:12px;left:12px;background:#fff;
-      padding:8px 10px;border-radius:10px;
-      box-shadow:0 2px 12px rgba(0,0,0,.1);
-      font:14px system-ui;
+    html, body, #map { height: 100%; margin: 0; }
+
+    .legend {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: #fff;
+      padding: 8px 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+      font: 14px system-ui;
+      z-index: 1000;
     }
-    .dot{
-      display:inline-block;width:10px;height:10px;border-radius:50%;
-      margin-right:6px;border:1px solid #222;vertical-align:middle;
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      border: 1px solid #222;
+      vertical-align: middle;
     }
-    .leaflet-popup-content {font:14px system-ui;}
+
+    .leaflet-popup-content {
+      font: 14px system-ui;
+    }
   </style>
 </head>
 
@@ -38,60 +55,65 @@
 
 <script>
 
-  const map = L.map('map').setView([48.8566, 2.3522], 9);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const map = L.map("map").setView([48.8566, 2.3522], 9);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18
   }).addTo(map);
 
 
-  function surgeColor(v){
-    if (v >= 2.5) return '#ff9b8c';
-    if (v >= 1.5) return '#ffe499';
-    return '#bfead7';
+  function surgeColor(v) {
+    if (v >= 2.5) return "#ff9b8c";
+    if (v >= 1.5) return "#ffe499";
+    return "#bfead7";
   }
 
-  function styleFromProps(p){
+  function baseStyle(p) {
     return {
       weight: 0.4,
-      color: '#000000',
+      color: "#000",
       fillOpacity: 0.65,
       fillColor: surgeColor(Number(p.manual_surge))
     };
   }
 
+  const highlightStyle = {
+    color: "#003d99",
+    weight: 2,
+    fillColor: "#4287f5",
+    fillOpacity: 0.45
+  };
+
 
   let hexLayer = null;
-
-
+  const hexById = {};               // h3_index → Leaflet layer
   const highlightLayer = L.layerGroup().addTo(map);
 
-  function resetHighlight(){
+  function resetHighlight() {
     highlightLayer.clearLayers();
   }
 
-  function highlightCluster(centerHex){
+
+  function highlightCluster(centerHex) {
     resetHighlight();
 
     const cluster = h3.gridDisk(centerHex, 1);
 
-    const highlightStyle = {
-      color: "#003d99",
-      weight: 2,
-      fillColor: "#4287f5",
-      fillOpacity: 0.45
-    };
+    cluster.forEach(h => {
+      const layer = hexById[h];
+      if (!layer) return;
 
-    hexLayer.eachLayer(layer => {
-      const h = layer.feature.properties.h3_index;
-      if (cluster.includes(h)) {
-        const coords = layer.feature.geometry.coordinates[0];
-        L.polygon(coords, highlightStyle).addTo(highlightLayer);
-      }
+      const geom = layer.feature.geometry;
+
+      // Clone geometry into highlight layer
+      L.geoJSON(geom, {
+        style: highlightStyle,
+        interactive: false
+      }).addTo(highlightLayer);
     });
 
     console.log("Cluster sélectionné :", centerHex);
   }
-
 
 
   fetch("idf_hex_grid_final.json")
@@ -99,13 +121,15 @@
     .then(gj => {
 
       hexLayer = L.geoJSON(gj, {
-        style: f => styleFromProps(f.properties),
+        style: f => baseStyle(f.properties),
 
-        onEachFeature: (f, poly) => {
+        onEachFeature: (f, layer) => {
           const p = f.properties;
 
           
-          poly.bindPopup(`
+          hexById[p.h3_index] = layer;
+
+          layer.bindPopup(`
             <b>${p.id}</b><br>
             Département : <b>${p.city_code}</b><br>
             H3 Index : <code>${p.h3_index}</code><br>
@@ -117,16 +141,19 @@
             Statut : ${p.status}
           `);
 
-          
-          poly.on("click", () => highlightCluster(p.h3_index));
+          layer.on("click", () => {
+            highlightCluster(p.h3_index);
+          });
         }
       }).addTo(map);
 
-      try { map.fitBounds(hexLayer.getBounds()); } 
-      catch(e) { console.warn("fitBounds error :", e); }
+      try {
+        map.fitBounds(hexLayer.getBounds());
+      } catch (e) {
+        console.warn("fitBounds failed:", e);
+      }
     })
     .catch(err => console.error("JSON GRID ERROR:", err));
-
 </script>
 </body>
 </html>
