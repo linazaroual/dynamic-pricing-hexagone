@@ -4,41 +4,46 @@
   <meta charset="utf-8"/>
   <title>Dynamic Pricing – Hexagonal Grids</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
 
-    .legend {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      background: #fff;
-      padding: 8px 10px;
-      border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.15);
-      font: 14px system-ui;
-      z-index: 1000;
+    .legend{
+      position:absolute;bottom:12px;left:12px;background:#fff;
+      padding:8px 10px;border-radius:10px;
+      box-shadow:0 2px 12px rgba(0,0,0,.15);
+      font:14px system-ui;z-index:1000;
+    }
+    .dot{
+      display:inline-block;width:10px;height:10px;border-radius:50%;
+      margin-right:6px;border:1px solid #222;vertical-align:middle;
     }
 
-    .dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 6px;
-      border: 1px solid #222;
-      vertical-align: middle;
+    /* debug banner */
+    #debug {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font: 13px system-ui;
+      z-index: 2000;
+      max-width: 90%;
+      white-space: pre-wrap;
+      display: none;
     }
+    #debug.error { background: rgba(180, 0, 0, 0.85); display: block; }
+    #debug.ok { background: rgba(0, 120, 0, 0.8); display: block; }
   </style>
 </head>
 
 <body>
 <div id="map"></div>
+<div id="debug"></div>
 
 <div class="legend">
   <div><span class="dot" style="background:#e74c3c"></span> Lyon</div>
@@ -51,56 +56,47 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
- 
+  const debug = document.getElementById("debug");
+  function showError(msg){ debug.className="error"; debug.textContent = "❌ " + msg; }
+  function showOk(msg){ debug.className="ok"; debug.textContent = "✅ " + msg; }
+
   const map = L.map("map").setView([46.6, 2.5], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18
-  }).addTo(map);
-
-
-  function cityStyle(color) {
-    return {
-      color: "#000",
-      weight: 0.4,
-      fillOpacity: 0.45,
-      fillColor: color
-    };
+  function cityStyle(color){
+    return { color:"#000", weight:0.4, fillOpacity:0.45, fillColor:color };
   }
 
-  
   const cityLayers = [];
-
-  function updateBounds() {
+  function updateBounds(){
     if (cityLayers.length === 0) return;
     const group = L.featureGroup(cityLayers);
-    map.fitBounds(group.getBounds(), { padding: [20, 20] });
+    map.fitBounds(group.getBounds(), { padding: [20,20] });
   }
 
-  function addCityGrid(url, color) {
-    console.log("📦 Loading:", url);
+  async function addCityGrid(url, color){
+    try{
+      const res = await fetch(url, { cache: "no-store" });
+      if(!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+      const gj = await res.json();
+      if(!gj || !gj.features || gj.features.length === 0) {
+        throw new Error(`Empty GeoJSON: ${url}`);
+      }
 
-    fetch(url)
-      .then(r => {
-        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-        return r.json();
-      })
-      .then(gj => {
-        console.log("✅ Loaded:", url, "| hexagons:", gj.features?.length);
+      const layer = L.geoJSON(gj, { style: cityStyle(color) }).addTo(map);
+      cityLayers.push(layer);
+      updateBounds();
 
-        const layer = L.geoJSON(gj, {
-          style: cityStyle(color)
-        }).addTo(map);
+      showOk(`Loaded ${cityLayers.length} file(s). Last: ${url} (${gj.features.length} hexagons)`);
+      console.log("Loaded:", url, gj.features.length);
 
-        cityLayers.push(layer);
-        updateBounds();
-      })
-      .catch(err => {
-        console.error("❌ Error loading:", url, err);
-      });
+    } catch(e){
+      console.error(e);
+      showError(e.message);
+    }
   }
 
-
+  // IMPORTANT: ces chemins doivent exister sur ton GitHub Pages
   addCityGrid("docs/lyon_hex_grid.geojson", "#e74c3c");
   addCityGrid("docs/marseille_hex_grid.geojson", "#3498db");
   addCityGrid("docs/toulouse_hex_grid.geojson", "#2ecc71");
