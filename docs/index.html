@@ -2,13 +2,11 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Dynamic Pricing – Île-de-France</title>
+  <title>Dynamic Pricing – Hexagonal Grids</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
@@ -34,10 +32,6 @@
       border: 1px solid #222;
       vertical-align: middle;
     }
-
-    .leaflet-popup-content {
-      font: 14px system-ui;
-    }
   </style>
 </head>
 
@@ -45,118 +39,67 @@
 <div id="map"></div>
 
 <div class="legend">
-  <div><span class="dot" style="background:#bfead7"></span> Low (0–1.4x)</div>
-  <div><span class="dot" style="background:#ffe499"></span> Medium (1.5–2.4x)</div>
-  <div><span class="dot" style="background:#ff9b8c"></span> High (≥2.5x)</div>
+  <div><span class="dot" style="background:#e74c3c"></span> Lyon</div>
+  <div><span class="dot" style="background:#3498db"></span> Marseille</div>
+  <div><span class="dot" style="background:#2ecc71"></span> Toulouse</div>
+  <div><span class="dot" style="background:#f39c12"></span> Nice</div>
+  <div><span class="dot" style="background:#9b59b6"></span> Lille</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/h3-js@4.3.0/dist/h3-js.umd.js"></script>
 
 <script>
-
-  const map = L.map("map").setView([48.8566, 2.3522], 9);
+  const map = L.map("map").setView([46.6, 2.5], 6);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18
   }).addTo(map);
 
-  function coordsToHex(lat, lng, resolution = 8) {
-  return h3.latLngToCell(lat, lng, resolution);
-}
 
-  function surgeColor(v) {
-    if (v >= 2.5) return "#ff9b8c";
-    if (v >= 1.5) return "#ffe499";
-    return "#bfead7";
+  function coordsToHex(lat, lng, resolution = 8) {
+    return h3.latLngToCell(lat, lng, resolution);
   }
 
-  function baseStyle(p) {
+
+  function cityStyle(color) {
     return {
-      weight: 0.4,
       color: "#000",
-      fillOpacity: 0.65,
-      fillColor: surgeColor(Number(p.manual_surge))
+      weight: 0.4,
+      fillOpacity: 0.4,
+      fillColor: color
     };
   }
 
-  const highlightStyle = {
-    color: "#003d99",
-    weight: 2,
-    fillColor: "#4287f5",
-    fillOpacity: 0.45
-  };
 
+  function addCityGrid(url, color) {
+    fetch(url)
+      .then(r => r.json())
+      .then(gj => {
+        const layer = L.geoJSON(gj, {
+          style: cityStyle(color)
+        }).addTo(map);
 
-  let hexLayer = null;
-  const hexById = {};               // h3_index → Leaflet layer
-  const highlightLayer = L.layerGroup().addTo(map);
-
-  function resetHighlight() {
-    highlightLayer.clearLayers();
+        cityLayers.push(layer);
+      })
+      .catch(err => console.error("Error loading", url, err));
   }
 
-
-  function highlightCluster(centerHex) {
-    resetHighlight();
-
-    const cluster = h3.gridDisk(centerHex, 1);
-
-    cluster.forEach(h => {
-      const layer = hexById[h];
-      if (!layer) return;
-
-      const geom = layer.feature.geometry;
-
-      // Clone geometry into highlight layer
-      L.geoJSON(geom, {
-        style: highlightStyle,
-        interactive: false
-      }).addTo(highlightLayer);
-    });
-
-    console.log("Cluster sélectionné :", centerHex);
-  }
+  const cityLayers = [];
 
 
-  fetch("idf_hex_grid_final.json")
-    .then(r => r.json())
-    .then(gj => {
+  addCityGrid("docs/lyon_hex_grid.geojson", "#e74c3c");
+  addCityGrid("docs/marseille_hex_grid.geojson", "#3498db");
+  addCityGrid("docs/toulouse_hex_grid.geojson", "#2ecc71");
+  addCityGrid("docs/nice_hex_grid.geojson", "#f39c12");
+  addCityGrid("docs/lille_hex_grid.geojson", "#9b59b6");
 
-      hexLayer = L.geoJSON(gj, {
-        style: f => baseStyle(f.properties),
 
-        onEachFeature: (f, layer) => {
-          const p = f.properties;
+  setTimeout(() => {
+    const group = L.featureGroup(cityLayers);
+    map.fitBounds(group.getBounds());
+  }, 800);
 
-          
-          hexById[p.h3_index] = layer;
-
-          layer.bindPopup(`
-            <b>${p.id}</b><br>
-            Département : <b>${p.city_code}</b><br>
-            H3 Index : <code>${p.h3_index}</code><br>
-            Latitude : ${p.latitude.toFixed(5)}<br>
-            Longitude : ${p.longitude.toFixed(5)}<br>
-            UUID : ${p.uuid}<br>
-            Disponible : ${p.available}<br>
-            Surge : ${p.manual_surge}x<br>
-            Statut : ${p.status}
-          `);
-
-          layer.on("click", () => {
-            highlightCluster(p.h3_index);
-          });
-        }
-      }).addTo(map);
-
-      try {
-        map.fitBounds(hexLayer.getBounds());
-      } catch (e) {
-        console.warn("fitBounds failed:", e);
-      }
-    })
-    .catch(err => console.error("JSON GRID ERROR:", err));
 </script>
 </body>
 </html>
