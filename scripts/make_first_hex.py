@@ -1,24 +1,20 @@
-# Crée un hexagone centré exactement sur Paris (48.8566, 2.3522)
-# de taille ≈ 1 km de diamètre (résolution H3 = 8)
-
 import os, uuid, json, h3
 from geojson import Feature, FeatureCollection, Polygon
 
 def main():
     os.makedirs("docs", exist_ok=True)
 
-    # Centre géographique de Paris 
+    
     center_lat, center_lng = 48.866667, 2.333333
 
-    #  Taille de l’hexagone (≈ 1 km de diamètre)
-    RES = 7  
+    
+    RES = 8  
 
-    # Calcul H3 
+    
     h = h3.latlng_to_cell(center_lat, center_lng, RES)
     lat, lng = h3.cell_to_latlng(h)
-    boundary = h3.cell_to_boundary(h)  # [[lat, lng], ...]
+    boundary = h3.cell_to_boundary(h)  
 
-    # zone
     zone = {
         "uuid": str(uuid.uuid4()),
         "id": "PAR-CENTER",

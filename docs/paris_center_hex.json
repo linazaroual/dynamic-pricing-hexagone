@@ -1,10 +1,10 @@
 {
-  "uuid": "1283f43b-32aa-433c-b45d-54f27186b53b",
+  "uuid": "53b4cf17-cc21-4522-a208-9cc9924fe561",
   "id": "PAR-CENTER",
-  "h3_index": "871fb4675ffffff",
+  "h3_index": "881fb4675bfffff",
   "city_code": "PAR",
-  "latitude": 48.85876448586028,
-  "longitude": 2.328720894288783,
+  "latitude": 48.86441683469777,
+  "longitude": 2.3363626741916077,
   "available": true,
   "manual_surge": 0,
   "status": "active"
