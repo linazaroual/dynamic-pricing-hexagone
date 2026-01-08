@@ -7,7 +7,7 @@ from shapely.geometry import shape, Point
 
 CITY_NAME = "Toulouse"
 CITY_INSEE = "31555"
-COMMUNES_GEOJSON = "docs/communes-31-haute-garonne.geojson "
+COMMUNES_GEOJSON = "docs/communes-31-haute-garonne.geojson"
 RES = 8
 
 OUTPUT_PREFIX = "toulouse"
