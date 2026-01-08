@@ -20,7 +20,6 @@
       margin-right:6px;border:1px solid #222;vertical-align:middle;
     }
 
-    /* debug banner */
     #debug {
       position: absolute;
       top: 12px;
@@ -46,6 +45,7 @@
 <div id="debug"></div>
 
 <div class="legend">
+  <div><span class="dot" style="background:#111111"></span> Île-de-France</div>
   <div><span class="dot" style="background:#e74c3c"></span> Lyon</div>
   <div><span class="dot" style="background:#3498db"></span> Marseille</div>
   <div><span class="dot" style="background:#2ecc71"></span> Toulouse</div>
@@ -63,31 +63,32 @@
   const map = L.map("map").setView([46.6, 2.5], 6);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
 
-  function cityStyle(color){
-    return { color:"#000", weight:0.4, fillOpacity:0.45, fillColor:color };
+  function makeStyle({ fillColor, fillOpacity=0.45, weight=0.4, color="#000" }){
+    return { color, weight, fillOpacity, fillColor };
   }
 
-  const cityLayers = [];
+  const layers = [];
   function updateBounds(){
-    if (cityLayers.length === 0) return;
-    const group = L.featureGroup(cityLayers);
+    if (layers.length === 0) return;
+    const group = L.featureGroup(layers);
     map.fitBounds(group.getBounds(), { padding: [20,20] });
   }
 
-  async function addCityGrid(url, color){
+  async function addGrid(url, styleObj){
     try{
       const res = await fetch(url, { cache: "no-store" });
       if(!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+
       const gj = await res.json();
       if(!gj || !gj.features || gj.features.length === 0) {
         throw new Error(`Empty GeoJSON: ${url}`);
       }
 
-      const layer = L.geoJSON(gj, { style: cityStyle(color) }).addTo(map);
-      cityLayers.push(layer);
+      const layer = L.geoJSON(gj, { style: () => makeStyle(styleObj) }).addTo(map);
+      layers.push(layer);
       updateBounds();
 
-      showOk(`Loaded ${cityLayers.length} file(s). Last: ${url} (${gj.features.length} hexagons)`);
+      showOk(`Loaded ${layers.length} file(s).\nLast: ${url} (${gj.features.length} hexagons)`);
       console.log("Loaded:", url, gj.features.length);
 
     } catch(e){
@@ -96,12 +97,16 @@
     }
   }
 
-  // IMPORTANT: ces chemins doivent exister sur ton GitHub Pages
-addCityGrid("./lyon_hex_grid.geojson", "#e74c3c");
-addCityGrid("./marseille_hex_grid.geojson", "#3498db");
-addCityGrid("./toulouse_hex_grid.geojson", "#2ecc71");
-addCityGrid("./nice_hex_grid.geojson", "#f39c12");
-addCityGrid("./lille_hex_grid.geojson", "#9b59b6");
+  // ✅ IDF (mets le bon nom ici si besoin)
+  // Si ton fichier est un .json GeoJSON, ça marche pareil tant que c’est un FeatureCollection.
+  addGrid("./idf_hex_grid_final.json", { fillColor:"#111111", fillOpacity:0.10, weight:0.25, color:"#111111" });
+
+  // ✅ Cities
+  addGrid("./lyon_hex_grid.geojson",      { fillColor:"#e74c3c" });
+  addGrid("./marseille_hex_grid.geojson", { fillColor:"#3498db" });
+  addGrid("./toulouse_hex_grid.geojson",  { fillColor:"#2ecc71" });
+  addGrid("./nice_hex_grid.geojson",      { fillColor:"#f39c12" });
+  addGrid("./lille_hex_grid.geojson",     { fillColor:"#9b59b6" });
 </script>
 </body>
 </html>
