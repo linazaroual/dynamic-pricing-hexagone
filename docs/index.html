@@ -5,8 +5,10 @@
   <title>Dynamic Pricing – Hexagonal Grids</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
@@ -47,9 +49,9 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/h3-js@4.3.0/dist/h3-js.umd.js"></script>
 
 <script>
+ 
   const map = L.map("map").setView([46.6, 2.5], 6);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -57,35 +59,46 @@
   }).addTo(map);
 
 
-  function coordsToHex(lat, lng, resolution = 8) {
-    return h3.latLngToCell(lat, lng, resolution);
-  }
-
-
   function cityStyle(color) {
     return {
       color: "#000",
       weight: 0.4,
-      fillOpacity: 0.4,
+      fillOpacity: 0.45,
       fillColor: color
     };
   }
 
+  
+  const cityLayers = [];
+
+  function updateBounds() {
+    if (cityLayers.length === 0) return;
+    const group = L.featureGroup(cityLayers);
+    map.fitBounds(group.getBounds(), { padding: [20, 20] });
+  }
 
   function addCityGrid(url, color) {
+    console.log("📦 Loading:", url);
+
     fetch(url)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        return r.json();
+      })
       .then(gj => {
+        console.log("✅ Loaded:", url, "| hexagons:", gj.features?.length);
+
         const layer = L.geoJSON(gj, {
           style: cityStyle(color)
         }).addTo(map);
 
         cityLayers.push(layer);
+        updateBounds();
       })
-      .catch(err => console.error("Error loading", url, err));
+      .catch(err => {
+        console.error("❌ Error loading:", url, err);
+      });
   }
-
-  const cityLayers = [];
 
 
   addCityGrid("docs/lyon_hex_grid.geojson", "#e74c3c");
@@ -93,13 +106,6 @@
   addCityGrid("docs/toulouse_hex_grid.geojson", "#2ecc71");
   addCityGrid("docs/nice_hex_grid.geojson", "#f39c12");
   addCityGrid("docs/lille_hex_grid.geojson", "#9b59b6");
-
-
-  setTimeout(() => {
-    const group = L.featureGroup(cityLayers);
-    map.fitBounds(group.getBounds());
-  }, 800);
-
 </script>
 </body>
 </html>
