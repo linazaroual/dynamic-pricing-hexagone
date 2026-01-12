@@ -7,10 +7,7 @@ import h3
 
 
 def load_communes(communes_path):
-    """
-    Charge les communes (GeoJSON) et retourne une liste de dict :
-    { code, name, dept, geom }
-    """
+
     with open(communes_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
