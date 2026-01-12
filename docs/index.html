@@ -2,50 +2,43 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <title>Dynamic Pricing – Hexagonal Grids</title>
+  <title>Dynamic Pricing – Hexagonal Zones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
 
-    .legend{
-      position:absolute;bottom:12px;left:12px;background:#fff;
-      padding:8px 10px;border-radius:10px;
-      box-shadow:0 2px 12px rgba(0,0,0,.15);
-      font:14px system-ui;z-index:1000;
-    }
-    .dot{
-      display:inline-block;width:10px;height:10px;border-radius:50%;
-      margin-right:6px;border:1px solid #222;vertical-align:middle;
-    }
-
-    #debug {
+    .legend {
       position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75);
-      color: #fff;
+      bottom: 12px;
+      left: 12px;
+      background: #fff;
       padding: 8px 10px;
       border-radius: 10px;
-      font: 13px system-ui;
-      z-index: 2000;
-      max-width: 90%;
-      white-space: pre-wrap;
-      display: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+      font: 14px system-ui;
+      z-index: 1000;
     }
-    #debug.error { background: rgba(180, 0, 0, 0.85); display: block; }
-    #debug.ok { background: rgba(0, 120, 0, 0.8); display: block; }
+
+    .dot {
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+      border:1px solid #222;
+    }
   </style>
 </head>
 
 <body>
 <div id="map"></div>
-<div id="debug"></div>
 
 <div class="legend">
-  <div><span class="dot" style="background:#111111"></span> Île-de-France</div>
+  <div><span class="dot" style="background:#555"></span> Île-de-France</div>
   <div><span class="dot" style="background:#e74c3c"></span> Lyon</div>
   <div><span class="dot" style="background:#3498db"></span> Marseille</div>
   <div><span class="dot" style="background:#2ecc71"></span> Toulouse</div>
@@ -56,57 +49,60 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  const debug = document.getElementById("debug");
-  function showError(msg){ debug.className="error"; debug.textContent = "❌ " + msg; }
-  function showOk(msg){ debug.className="ok"; debug.textContent = "✅ " + msg; }
+const map = L.map("map").setView([46.6, 2.5], 6);
 
-  const map = L.map("map").setView([46.6, 2.5], 6);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18
+}).addTo(map);
 
-  function makeStyle({ fillColor, fillOpacity=0.45, weight=0.4, color="#000" }){
-    return { color, weight, fillOpacity, fillColor };
-  }
+function style(color){
+  return {
+    color: "#000",
+    weight: 0.4,
+    fillOpacity: 0.55,
+    fillColor: color
+  };
+}
 
-  const layers = [];
-  function updateBounds(){
-    if (layers.length === 0) return;
-    const group = L.featureGroup(layers);
-    map.fitBounds(group.getBounds(), { padding: [20,20] });
-  }
+const layers = [];
 
-  async function addGrid(url, styleObj){
-    try{
-      const res = await fetch(url, { cache: "no-store" });
-      if(!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+function addGrid(url, color){
+  fetch(url, { cache: "no-store" })
+    .then(r => r.json())
+    .then(gj => {
+      const layer = L.geoJSON(gj, {
+        style: style(color),
+        onEachFeature: (f, layer) => {
+          const p = f.properties;
 
-      const gj = await res.json();
-      if(!gj || !gj.features || gj.features.length === 0) {
-        throw new Error(`Empty GeoJSON: ${url}`);
-      }
+          layer.bindPopup(`
+            <b>ID :</b> ${p.id}<br>
+            <b>Ville :</b> ${p.city_name || "—"}<br>
+            <b>Département :</b> ${p.dept_code}<br>
+            <b>H3 :</b> <code>${p.h3_index}</code><br>
+            <b>Surge :</b> ${p.manual_surge}x<br>
+            <b>Status :</b> ${p.status}<br>
+            <b>Disponible :</b> ${p.available}
+          `);
+        }
+      }).addTo(map);
 
-      const layer = L.geoJSON(gj, { style: () => makeStyle(styleObj) }).addTo(map);
       layers.push(layer);
-      updateBounds();
 
-      showOk(`Loaded ${layers.length} file(s).\nLast: ${url} (${gj.features.length} hexagons)`);
-      console.log("Loaded:", url, gj.features.length);
+      const group = L.featureGroup(layers);
+      map.fitBounds(group.getBounds(), { padding:[20,20] });
+    })
+    .catch(e => console.error("Load error:", url, e));
+}
 
-    } catch(e){
-      console.error(e);
-      showError(e.message);
-    }
-  }
+/* === DATA === */
+addGrid("docs/idf_hex_grid_final.json", "#555");
+addGrid("docs/lyon_hex_grid_final.geojson", "#e74c3c");
+addGrid("docs/marseille_hex_grid_final.geojson", "#3498db");
+addGrid("docs/toulouse_hex_grid_final.geojson", "#2ecc71");
+addGrid("docs/nice_hex_grid_final.geojson", "#f39c12");
+addGrid("docs/lille_hex_grid_final.geojson", "#9b59b6");
 
-  // ✅ IDF (mets le bon nom ici si besoin)
-  // Si ton fichier est un .json GeoJSON, ça marche pareil tant que c’est un FeatureCollection.
-  addGrid("./idf_hex_grid_final.json", { fillColor:"#111111", fillOpacity:0.10, weight:0.25, color:"#111111" });
-
-  // ✅ Cities
-  addGrid("./lyon_hex_grid.geojson",      { fillColor:"#e74c3c" });
-  addGrid("./marseille_hex_grid.geojson", { fillColor:"#3498db" });
-  addGrid("./toulouse_hex_grid.geojson",  { fillColor:"#2ecc71" });
-  addGrid("./nice_hex_grid.geojson",      { fillColor:"#f39c12" });
-  addGrid("./lille_hex_grid.geojson",     { fillColor:"#9b59b6" });
 </script>
 </body>
 </html>
