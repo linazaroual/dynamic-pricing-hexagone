@@ -73,12 +73,11 @@ function addGrid(url, color){
       const layer = L.geoJSON(gj, {
         style: style(color),
         onEachFeature: (f, layer) => {
-          const p = f.properties;
-
+          const p = f.properties || {};
           layer.bindPopup(`
             <b>ID :</b> ${p.id}<br>
             <b>Ville :</b> ${p.city_name || "—"}<br>
-            <b>Département :</b> ${p.dept_code}<br>
+            <b>Département :</b> ${p.dept_code || "—"}<br>
             <b>H3 :</b> <code>${p.h3_index}</code><br>
             <b>Surge :</b> ${p.manual_surge}x<br>
             <b>Status :</b> ${p.status}<br>
@@ -88,20 +87,18 @@ function addGrid(url, color){
       }).addTo(map);
 
       layers.push(layer);
-
-      const group = L.featureGroup(layers);
-      map.fitBounds(group.getBounds(), { padding:[20,20] });
+      map.fitBounds(L.featureGroup(layers).getBounds(), { padding:[20,20] });
     })
     .catch(e => console.error("Load error:", url, e));
 }
 
-/* === DATA === */
-addGrid("docs/idf_hex_grid_final.json", "#555");
-addGrid("docs/lyon_hex_grid_final.geojson", "#e74c3c");
-addGrid("docs/marseille_hex_grid_final.geojson", "#3498db");
-addGrid("docs/toulouse_hex_grid_final.geojson", "#2ecc71");
-addGrid("docs/nice_hex_grid_final.geojson", "#f39c12");
-addGrid("docs/lille_hex_grid_final.geojson", "#9b59b6");
+/* === DATA (paths corrigés) === */
+addGrid("idf_hex_grid_final.json", "#555");
+addGrid("lyon_hex_grid_final.geojson", "#e74c3c");
+addGrid("marseille_hex_grid_final.geojson", "#3498db");
+addGrid("toulouse_hex_grid_final.geojson", "#2ecc71");
+addGrid("nice_hex_grid_final.geojson", "#f39c12");
+addGrid("lille_hex_grid_final.geojson", "#9b59b6");
 
 </script>
 </body>
